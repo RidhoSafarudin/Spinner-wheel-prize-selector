@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// Import the auto-generated supabase client
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Prize {
