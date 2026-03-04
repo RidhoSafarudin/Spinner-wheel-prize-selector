@@ -14,13 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      prizes: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          quantity: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      spin_history: {
+        Row: {
+          id: string
+          prize_id: string
+          prize_name: string
+          spun_at: string
+        }
+        Insert: {
+          id?: string
+          prize_id: string
+          prize_name: string
+          spun_at?: string
+        }
+        Update: {
+          id?: string
+          prize_id?: string
+          prize_name?: string
+          spun_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_history_prize_id_fkey"
+            columns: ["prize_id"]
+            isOneToOne: false
+            referencedRelation: "prizes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      spin_prize: { Args: { prize_id_param: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
