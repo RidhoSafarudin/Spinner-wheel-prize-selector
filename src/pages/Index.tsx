@@ -65,7 +65,7 @@ const Index = () => {
             Spin & <span className="text-gold">Win!</span>
           </h2>
           <p className="text-muted-foreground text-center max-w-sm mb-4">
-            Try your luck! Spin the wheel for a chance to win amazing prizes.
+            Putar Spinner nya Untuk Memilih Hadiah!.
           </p>
           {isLoading ? (
             <div className="w-80 h-80 rounded-full bg-muted animate-pulse" />

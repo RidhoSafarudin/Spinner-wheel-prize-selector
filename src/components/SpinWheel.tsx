@@ -19,66 +19,64 @@ export function SpinWheel({ prizes, onSpinComplete, disabled }: SpinWheelProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const drawWheel = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || prizes.length === 0) return;
+ const drawWheel = useCallback(() => {
+  const canvas = canvasRef.current;
+  if (!canvas || prizes.length === 0) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
-    const size = canvas.width;
-    const center = size / 2;
-    const radius = center - 8;
-    const arc = (2 * Math.PI) / prizes.length;
+  const size = canvas.width;
+  const center = size / 2;
+  const radius = center - 8;
 
-    ctx.clearRect(0, 0, size, size);
+  const totalWeight = prizes.reduce((sum, p) => sum + p.quantity, 0);
 
-    // Draw segments
-    prizes.forEach((prize, i) => {
-      const startAngle = i * arc;
-      const endAngle = startAngle + arc;
+  ctx.clearRect(0, 0, size, size);
 
-      ctx.beginPath();
-      ctx.moveTo(center, center);
-      ctx.arc(center, center, radius, startAngle, endAngle);
-      ctx.closePath();
-      ctx.fillStyle = prize.color || WHEEL_COLORS[i % WHEEL_COLORS.length];
-      ctx.fill();
+  let startAngle = -Math.PI / 2; 
 
-      // Segment border
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+  prizes.forEach((prize, i) => {
+    const sliceAngle = (prize.quantity / totalWeight) * 2 * Math.PI;
+    const endAngle = startAngle + sliceAngle;
 
-      // Text
-      ctx.save();
-      ctx.translate(center, center);
-      ctx.rotate(startAngle + arc / 2);
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.max(10, Math.min(16, 200 / prizes.length))}px 'Space Grotesk', sans-serif`;
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 3;
-
-      const text = prize.name.length > 14 ? prize.name.slice(0, 12) + '…' : prize.name;
-      ctx.fillText(text, radius - 20, 5);
-      ctx.restore();
-    });
-
-    // Center circle
+    // Draw segment
     ctx.beginPath();
-    ctx.arc(center, center, 30, 0, 2 * Math.PI);
-    ctx.fillStyle = '#d4a017';
+    ctx.moveTo(center, center);
+    ctx.arc(center, center, radius, startAngle, endAngle);
+    ctx.closePath();
+
+    ctx.fillStyle = prize.color || WHEEL_COLORS[i % WHEEL_COLORS.length];
     ctx.fill();
-    ctx.strokeStyle = '#b8860b';
-    ctx.lineWidth = 3;
+
+    // Subtle border between slices
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
     ctx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(center, center, 20, 0, 2 * Math.PI);
-    ctx.fillStyle = '#f5d060';
-    ctx.fill();
-  }, [prizes]);
+    // Text Labeling
+    ctx.save();
+    ctx.translate(center, center);
+    // Rotate to the middle of the slice
+    ctx.rotate(startAngle + sliceAngle / 2);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+
+    const fontSize = Math.max(10, Math.min(16, 250 / prizes.length));
+    ctx.font = `bold ${fontSize}px sans-serif`;
+
+    const text = prize.name.length > 14 ? prize.name.slice(0, 12) + '…' : prize.name;
+    
+    // Position text towards the outer edge
+    ctx.fillText(text, radius - 25, fontSize / 3);
+
+    ctx.restore();
+    startAngle = endAngle;
+  });
+}, [prizes]);
 
   useEffect(() => {
     drawWheel();
@@ -96,25 +94,46 @@ export function SpinWheel({ prizes, onSpinComplete, disabled }: SpinWheelProps) 
   }, [prizes]);
 
   const spin = useCallback(() => {
-    if (spinning || disabled || prizes.length === 0) return;
+  if (spinning || disabled || prizes.length === 0) return;
 
-    setSpinning(true);
-    const selectedPrize = selectPrize();
-    const prizeIndex = prizes.indexOf(selectedPrize);
-    const arc = 360 / prizes.length;
+  setSpinning(true);
+  const selectedPrize = selectPrize();
+  const totalWeight = prizes.reduce((sum, p) => sum + p.quantity, 0);
 
-    // Calculate target angle so pointer (top) lands on the selected prize
-    const targetAngle = 360 - (prizeIndex * arc + arc / 2);
-    const fullRotations = 5 + Math.floor(Math.random() * 3);
-    const totalDegrees = fullRotations * 360 + targetAngle + (Math.random() * arc * 0.6 - arc * 0.3);
+  let accumulatedWeight = 0;
+  let prizeStartAngle = 0;
+  let prizeEndAngle = 0;
 
-    setRotation(prev => prev + totalDegrees);
+  // Find the prize slice position (in degrees)
+  for (const prize of prizes) {
+    const sliceWidth = (prize.quantity / totalWeight) * 360;
+    if (prize.id === selectedPrize.id) {
+      prizeStartAngle = accumulatedWeight;
+      prizeEndAngle = accumulatedWeight + sliceWidth;
+      break;
+    }
+    accumulatedWeight += sliceWidth;
+  }
 
-    setTimeout(() => {
-      setSpinning(false);
-      onSpinComplete(selectedPrize);
-    }, 4200);
-  }, [spinning, disabled, prizes, selectPrize, onSpinComplete]);
+  // 1. Pick a random degree within the winning slice (staying away from the edges)
+  const innerSliceAngle = prizeStartAngle + (Math.random() * (prizeEndAngle - prizeStartAngle) * 0.8 + 0.1);
+
+  // 2. Calculate the rotation
+  const extraSpins = 360 * 8; 
+  
+  const currentRotation = rotation;
+  const rotationAdjustment = (360 - (innerSliceAngle % 360));
+  
+  // We normalize the current rotation to find the next "stop" point
+  const finalRotation = currentRotation + extraSpins + rotationAdjustment - (currentRotation % 360);
+
+  setRotation(finalRotation);
+
+  setTimeout(() => {
+    setSpinning(false);
+    onSpinComplete(selectedPrize);
+  }, 4200);
+}, [spinning, disabled, prizes, rotation, selectPrize, onSpinComplete]);
 
   if (prizes.length === 0) {
     return (
