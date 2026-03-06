@@ -15,10 +15,10 @@ ikuti langkah2 berikut jika sudah menginstall Node.js dan npm:
 
 ```sh
 # Step 1: Clone repository menggunakan URL Git project.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/RidhoSafarudin/Spinner-wheel-prize-selector
 
 # Step 2: Masuk ke direktori project.
-cd <YOUR_PROJECT_NAME>
+cd Spinner-wheel-prize-selector
 
 # Step 3: Install dependency yang diperlukan.
 npm i
